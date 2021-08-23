@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>ClassLibraryAsync</id>
+    <version>1.0.0</version>
+    <authors>ClassLibraryAsync</authors>
+    <description>自訂函示庫</description>
+    <dependencies>
+      <group targetFramework="net5.0">
+        <dependency id="Newtonsoft.Json" version="13.0.1" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="C:\Users\user1\source\repos\ClassLibraryAsync\ClassLibraryAsync\bin\Debug\net5.0\ClassLibraryAsync.dll" target="lib\net5.0\ClassLibraryAsync.dll" />
+  </files>
+</package>
