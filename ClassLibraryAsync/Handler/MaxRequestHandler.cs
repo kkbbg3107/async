@@ -62,15 +62,6 @@ namespace ClassLibraryAsync.Handler
 
             return  allServiceData[num].reports.GetAsync(reportObj);
         }
-
-        /// <summary>
-        /// 找到忙碌中的主機
-        /// </summary>
-        /// <returns></returns>
-        private async Task GetBusyServer()
-        {
-            
-        }
     }
 
     public class AllServerObj
