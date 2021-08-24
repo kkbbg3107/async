@@ -1,0 +1,10 @@
+
+4. 建立一個能夠控制各台主機最大請求數量的類別 (每個SERVICE可以有不同的MaxRequests)
+
+ 
+當所有主機閒置時會隨機選擇一台執行, 忙碌時則必須要能非同步的等待, 直到有閒置的主機時優先將請求分派給空閒的主機
+
+// -----------------我的想法----------------------
+
+使用MaxRequestsHandler類別 控制server的最大請求次數 p.s server使用FakeService 裡面已經有最大請求次數限制 
+所以外面的MaxRequestsHandler 最大請求上線要小於FakeService的最大請求上限

@@ -23,36 +23,24 @@ namespace webApi
                 keyMap = string.Empty,
                 assign = string.Empty,
             };
-
-            /// <summary>
-            /// 建立存放所有service的集合
-            /// </summary>
-            IReport[] listReport = new IReport[]
-            {
-                new FakeServices(3, 1,"1"),
-                new FakeServices(3, 2,"2"),
-                new FakeServices(3, 3,"3"),
-            };
-
+            
             List<AllServerObj> test = new List<AllServerObj>()
             {
-                new AllServerObj(){maxRequests = 3, reports = new FakeServices(5, 1,"1")},
-                new AllServerObj(){maxRequests = 3, reports = new FakeServices(5, 2,"2")},
-                new AllServerObj(){maxRequests = 3, reports = new FakeServices(5, 3,"3")},
+                new AllServerObj(){maxRequests = 3, reports = new FakeServices(9, 1,"1")},
+                new AllServerObj(){maxRequests = 3, reports = new FakeServices(9, 2,"2")},
+                new AllServerObj(){maxRequests = 3, reports = new FakeServices(9, 3,"3")},
             };
 
             MaxRequestHandler maxRequestHandler = new MaxRequestHandler(test);
 
-            int i = 1;
-            // 發送100次請求 要有隨機分配請求給三個service 超過server請求次數限制後 非同步等待請求釋放
-            for ( i = 1; i <= 30; i++)
-            {
-                var recordI = i;
-                Console.WriteLine(recordI);
+            
+            // 發送30次請求 要有隨機分配請求給三個service 超過server請求次數限制後 非同步等待請求釋放
+            for (int i = 1; i <= 30; i++)
+            {              
                 _ = Task.Run(async () =>
                 {
                     try
-                    {                                                
+                    {
                         // 這邊碰到await 就進行下一次request
                         var result = await maxRequestHandler.GetAsync(products);
                         Console.WriteLine(result.signature);
@@ -60,7 +48,7 @@ namespace webApi
                     catch(Exception ex)
                     {
                         Console.WriteLine(ex);
-                    }                             
+                    }                       
                 });
             }
             Console.ReadLine();
