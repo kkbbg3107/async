@@ -41,24 +41,33 @@ namespace ClassLibraryAsync.Handler
         /// </summary>
         private Random Random = new Random();
 
+        private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(0, 3);
         /// <summary>
         /// 假如每個service 的請求數量上限為3 主程式寄發30個請求 
         /// 第10個請求時 3台server都忙碌中 請求需要非同步等待
         /// </summary>
         /// <param name="reportObj">帶入服務的物件</param>
         /// <returns>response物件</returns>
-        public async Task<Result> GetAsync(ReportObj reportObj)
-        {            
-            // 隨機取主機
+
+        // 重置信號量
+        public void ReleaseInitialSource()
+        {
+            semaphoreSlim.Release(3);
+        }
+
+        public  Task<Result> GetAsync(ReportObj reportObj, int i )
+        {
+            //// 隨機取主機
             var num = Random.Next(0, allServiceData.Count);
 
-            // 請求進來 計數+1    
-            var count = Interlocked.Increment(ref allServiceData[num].RequestNum); 
+            //// 請求進來 計數+1    
+            var count = Interlocked.Increment(ref allServiceData[num].RequestNum);
 
-            // 如果這台server的當前請求數 <= 他的最大請求數  (閒置中)
-            if (count <= allServiceData[num].maxRequests)
+            //// 如果這台server的當前請求數 <= 他的最大請求數  (閒置中)
+            if (count <= 3)
             {
-                stayServiceData.Add(allServiceData[num]); // 把閒置的主機加到另一個集合              
+                //stayServiceData.Add(allServiceData[num]); // 把閒置的主機加到另一個集合 
+                return allServiceData[num].reports.GetAsync(reportObj);
             }
             else // 主機請求超過上限 => 進行釋放資源的任務
             {
@@ -67,21 +76,62 @@ namespace ClassLibraryAsync.Handler
                    Interlocked.Decrement(ref allServiceData[num].RequestNum);
                }));
             }
-            
-            // 如果閒置主機集合不為零 => 做接受請求的服務
-            if (stayServiceData != null && stayServiceData.Count > 0)
+
+            try
+            {                                
+                // 一旦先前的請求完成(包括釋放) 即開始等待下一個
+                 Task.Run( async() =>
+                {
+                    // 如果允許請求進入semaphoreSlim  等待信號容量釋放
+                    // 減少semaphoreSlim內的信號數 
+                    semaphoreSlim.WaitAsync();
+                    Console.WriteLine("被接收的請求" + i);
+                });
+            }
+            finally
             {
-                return await stayServiceData[stayServiceData.Count - 1].reports.GetAsync(reportObj);
-            }
-            else if (stayServiceData.Count == 0) // 三台主機都忙碌中
-            {            
-                Task busyTasks = await Task.WhenAny(tasks); // 哪台忙碌主機先完成釋放資源就 接著做服務
-                tasks.Remove(busyTasks);
-
-                return await stayServiceData[stayServiceData.Count - 1].reports.GetAsync(reportObj);
+                semaphoreSlim.Release();
+                Console.WriteLine("被release的請求" + i);
             }
 
-            return await stayServiceData[stayServiceData.Count - 1].reports.GetAsync(reportObj);
+            var num2 = Random.Next(0, stayServiceData.Count);
+
+            return stayServiceData[num2].reports.GetAsync(reportObj);
+            
+            
+            //// 隨機取主機
+            //var num = Random.Next(0, allServiceData.Count);
+
+            //// 請求進來 計數+1    
+            //var count = Interlocked.Increment(ref allServiceData[num].RequestNum); 
+
+            //// 如果這台server的當前請求數 <= 他的最大請求數  (閒置中)
+            //if (count <= allServiceData[num].maxRequests)
+            //{
+            //    stayServiceData.Add(allServiceData[num]); // 把閒置的主機加到另一個集合              
+            //}
+            //else // 主機請求超過上限 => 進行釋放資源的任務
+            //{
+            //    tasks.Add(Task.Run(() =>
+            //   {
+            //       Interlocked.Decrement(ref allServiceData[num].RequestNum);
+            //   }));
+            //}
+
+            //// 如果閒置主機集合不為零 => 做接受請求的服務
+            //if (stayServiceData != null && stayServiceData.Count > 0)
+            //{
+            //    return await stayServiceData[stayServiceData.Count - 1].reports.GetAsync(reportObj);
+            //}
+            //else if (stayServiceData.Count == 0) // 三台主機都忙碌中
+            //{            
+            //    Task busyTasks = await Task.WhenAny(tasks); // 哪台忙碌主機先完成釋放資源就 接著做服務
+            //    tasks.Remove(busyTasks);
+
+            //    return await stayServiceData[stayServiceData.Count - 1].reports.GetAsync(reportObj);
+            //}
+
+            //return await stayServiceData[stayServiceData.Count - 1].reports.GetAsync(reportObj);
         }   
     }
 

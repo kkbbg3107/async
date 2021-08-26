@@ -10,3 +10,15 @@ C:\Users\user1\source\repos\ClassLibraryAsync\ClassLibraryAsync\obj\Debug\net5.0
 C:\Users\user1\source\repos\ClassLibraryAsync\ClassLibraryAsync\obj\Debug\net5.0\ref\ClassLibraryAsync.dll
 C:\Users\user1\source\repos\ClassLibraryAsync\ClassLibraryAsync\obj\Debug\net5.0\ClassLibraryAsync.pdb
 C:\Users\user1\source\repos\ClassLibraryAsync\ClassLibraryAsync\obj\Debug\net5.0\ClassLibraryAsync.csproj.AssemblyReference.cache
+C:\Users\kkbbg\OneDrive\桌面\ClassLibraryAsync-20210826T055518Z-001\ClassLibraryAsync\ClassLibraryAsync\bin\Debug\net5.0\ClassLibraryAsync.deps.json
+C:\Users\kkbbg\OneDrive\桌面\ClassLibraryAsync-20210826T055518Z-001\ClassLibraryAsync\ClassLibraryAsync\bin\Debug\net5.0\ClassLibraryAsync.dll
+C:\Users\kkbbg\OneDrive\桌面\ClassLibraryAsync-20210826T055518Z-001\ClassLibraryAsync\ClassLibraryAsync\bin\Debug\net5.0\ref\ClassLibraryAsync.dll
+C:\Users\kkbbg\OneDrive\桌面\ClassLibraryAsync-20210826T055518Z-001\ClassLibraryAsync\ClassLibraryAsync\bin\Debug\net5.0\ClassLibraryAsync.pdb
+C:\Users\kkbbg\OneDrive\桌面\ClassLibraryAsync-20210826T055518Z-001\ClassLibraryAsync\ClassLibraryAsync\obj\Debug\net5.0\ClassLibraryAsync.csprojAssemblyReference.cache
+C:\Users\kkbbg\OneDrive\桌面\ClassLibraryAsync-20210826T055518Z-001\ClassLibraryAsync\ClassLibraryAsync\obj\Debug\net5.0\ClassLibraryAsync.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\kkbbg\OneDrive\桌面\ClassLibraryAsync-20210826T055518Z-001\ClassLibraryAsync\ClassLibraryAsync\obj\Debug\net5.0\ClassLibraryAsync.AssemblyInfoInputs.cache
+C:\Users\kkbbg\OneDrive\桌面\ClassLibraryAsync-20210826T055518Z-001\ClassLibraryAsync\ClassLibraryAsync\obj\Debug\net5.0\ClassLibraryAsync.AssemblyInfo.cs
+C:\Users\kkbbg\OneDrive\桌面\ClassLibraryAsync-20210826T055518Z-001\ClassLibraryAsync\ClassLibraryAsync\obj\Debug\net5.0\ClassLibraryAsync.csproj.CoreCompileInputs.cache
+C:\Users\kkbbg\OneDrive\桌面\ClassLibraryAsync-20210826T055518Z-001\ClassLibraryAsync\ClassLibraryAsync\obj\Debug\net5.0\ClassLibraryAsync.dll
+C:\Users\kkbbg\OneDrive\桌面\ClassLibraryAsync-20210826T055518Z-001\ClassLibraryAsync\ClassLibraryAsync\obj\Debug\net5.0\ref\ClassLibraryAsync.dll
+C:\Users\kkbbg\OneDrive\桌面\ClassLibraryAsync-20210826T055518Z-001\ClassLibraryAsync\ClassLibraryAsync\obj\Debug\net5.0\ClassLibraryAsync.pdb

@@ -28,12 +28,13 @@ namespace ClassLibraryAsync.Services
         public async Task<Result> GetAsync(ReportObj reportObj)
         {                       
             string json = JsonConvert.SerializeObject(reportObj);
-            HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
-            HttpResponseMessage response = await client.PostAsync(UrlPost, content);
-            response.EnsureSuccessStatusCode();
-            string responseBody = await response.Content.ReadAsStringAsync();
-            var result = JsonConvert.DeserializeObject<Result>(responseBody);
-            result.result = "reportService\n";
+            //HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
+            //HttpResponseMessage response = await client.PostAsync(UrlPost, content);
+            //response.EnsureSuccessStatusCode();
+            //string responseBody = await response.Content.ReadAsStringAsync();
+            //var result = JsonConvert.DeserializeObject<Result>(responseBody);
+            //result.result = "reportService\n";
+            Result result = new Result();
             result.signature = Name;
             return result;
         }
