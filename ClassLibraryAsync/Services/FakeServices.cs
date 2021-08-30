@@ -55,13 +55,15 @@ namespace ClassLibraryAsync.Services
                 throw new Exception("請求超過最大次數上限");
             }
 
-            // 碰到await 返回呼叫端等 await中的方法執行完畢 從該處繼續執行
-            await Task.Delay(RequestSecond * 1000);
-
-            return new Result
+            var result = new Result()
             {
                 signature = Name,
             };
+
+            // 碰到await 返回呼叫端等 await中的方法執行完畢 從該處繼續執行
+            await Task.Delay(RequestSecond * 1000);
+
+            return result;
         }
     }
 }

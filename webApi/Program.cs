@@ -24,35 +24,32 @@ namespace webApi
                 assign = string.Empty,
             };
             
-            List<AllServerObj> test = new List<AllServerObj>()
+            List<IReport> server = new List<IReport>()
             {
-                new AllServerObj(){maxRequests = 3, reports = new ReportServices("1")},
-                new AllServerObj(){maxRequests = 3, reports = new ReportServices("2")},
-                new AllServerObj(){maxRequests = 3, reports = new ReportServices("3")},
+                new FakeServices(100, 1, "Server1"),
+                new FakeServices(100, 2, "Server2"),
+                new FakeServices(100, 3, "Server3"),
             };
 
-            MaxRequestHandler maxRequestHandler = new MaxRequestHandler(test);
+            MaxRequestHandler maxRequestHandler = new MaxRequestHandler(server, 5);
 
-            // 釋放初始要求數目
-            maxRequestHandler.ReleaseInitialSource();
-
-            // 發送30次請求 要有隨機分配請求給三個service 超過server請求次數限制後 非同步等待請求釋放
-            for (int i = 1; i <= 15; i++)
-            {
-                var i1 = i;
+            // 發送50次請求 要有隨機分配請求給三個service 超過server請求次數限制後 非同步等待請求釋放
+            for (int i = 1; i <= 50; i++)
+            {        
                 _ = Task.Run(async () =>
-                {
+                {                               
                     try
-                    {
+                    {                                        
                         // 這邊碰到await 就進行下一次request
-                        var result = await maxRequestHandler.GetAsync(products, i1);
+                        var result = await maxRequestHandler.GetAsync(products);
+                        
                         Console.WriteLine(result.signature);
                     }
                     catch(Exception ex)
                     {
                         Console.WriteLine(ex);
-                    }                       
-                });               
+                    }
+                });                
             }
             Console.ReadLine();
         }

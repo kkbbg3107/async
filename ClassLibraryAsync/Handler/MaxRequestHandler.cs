@@ -1,6 +1,7 @@
 ﻿using ClassLibraryAsync.Interface;
 using ClassLibraryAsync.Model;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,144 +15,132 @@ namespace ClassLibraryAsync.Handler
     /// 確認每台SERVER的狀態(忙碌 OR 閒置)
     /// 忙碌就非同步等待
     /// </summary>
-    public class MaxRequestHandler
+    public class MaxRequestHandler : IReport
     {
-        /// 建立私有欄位
-        private List<AllServerObj> allServiceData;
+        // 最大請求次數
+        private int MaxRequestCount;
+
+        /// 建立私有服務欄位
+        private List<IReport> allServiceData;
 
         /// <summary>
-        /// 放入閒置中的主機的集合
+        /// 建立semaphoreslim鎖
         /// </summary>
-        private List<AllServerObj> stayServiceData = new List<AllServerObj>();
+        private SemaphoreSlim semaphores;
 
-        // 建立一個任務的集合 => 裝每個忙碌中要準備釋放資源的主機
-        List<Task> tasks = new List<Task>();
+        ///// <summary>
+        ///// 執行緒安全字典 key:server的索引 value:server的請求次數
+        ///// </summary>
+        //private ConcurrentDictionary<int, int> dict_Thread = new ConcurrentDictionary<int, int>();
+
+        /// <summary>
+        /// 存正在忙線的主機
+        /// </summary>
+        private ConcurrentQueue<int> queue = new ConcurrentQueue<int>(); 
+
+        /// <summary>
+        /// 初始請求數
+        /// </summary>
+        private int requests = 0;
 
         /// <summary>
         /// 建立建構式
         /// </summary>
         /// <param name="reports">各式服務</param>
-        public MaxRequestHandler(List<AllServerObj> allServerObjs)
+        public MaxRequestHandler(List<IReport> allServerObjs, int maxRequetCount)
         {
             allServiceData = allServerObjs;
+            MaxRequestCount = maxRequetCount;
+            semaphores = new SemaphoreSlim(maxRequetCount);
         }
 
         /// <summary>
         /// 定義隨機變數
         /// </summary>
         private Random Random = new Random();
-
-        private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(0, 3);
+       
         /// <summary>
-        /// 假如每個service 的請求數量上限為3 主程式寄發30個請求 
+        /// 假如每個service 的請求數量上限為3 主程式寄發30個請求
         /// 第10個請求時 3台server都忙碌中 請求需要非同步等待
         /// </summary>
         /// <param name="reportObj">帶入服務的物件</param>
         /// <returns>response物件</returns>
-
-        // 重置信號量
-        public void ReleaseInitialSource()
+        public async Task<Result> GetAsync(ReportObj reportObj)
         {
-            semaphoreSlim.Release(3);
+            var result = new Result();
+
+            await semaphores.WaitAsync();
+
+            // 拿到閒置主機
+            var idleIndex = GetIdleServiceIndex();
+            
+            // 异步等待进入信号量，如果没有线程被授予对信号量的访问权限，则进入执行保护代码；否则此线程将在此处等待，直到信号量被释放为止                               
+            try
+            {
+                // 把主機索引存去queue
+                //queue.Enqueue(idleIndex);
+
+                // 做服務!!! 印到CONSOLE上 做完後=> 在釋放資源           
+                result = await allServiceData[idleIndex].GetAsync(reportObj);
+
+                // 把主機從queue裡面移除 queue
+                //queue.TryDequeue(out int res);
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex);
+            };
+
+            // 增加semaphoreSlim內的信號空間 RELEASE +1 池+1    
+            semaphores.Release();
+
+            return result;                  
         }
 
-        public  Task<Result> GetAsync(ReportObj reportObj, int i )
+        /// <summary>
+        /// 取得誰是閒置主機
+        /// </summary>
+        /// <returns>主機編號</returns>
+        private int GetIdleServiceIndex()
         {
-            //// 隨機取主機
-            var num = Random.Next(0, allServiceData.Count);
-
-            //// 請求進來 計數+1    
-            var count = Interlocked.Increment(ref allServiceData[num].RequestNum);
-
-            //// 如果這台server的當前請求數 <= 他的最大請求數  (閒置中)
-            if (count <= 3)
+            // 只要有閒置
+            if (queue.Count != allServiceData.Count)
             {
-                //stayServiceData.Add(allServiceData[num]); // 把閒置的主機加到另一個集合 
-                return allServiceData[num].reports.GetAsync(reportObj);
+                // 找閒置主機
+                return getidleServer();
             }
-            else // 主機請求超過上限 => 進行釋放資源的任務
+            else // 如果沒有閒置server 看哪台先完成就先回傳哪台 WhenAny => 需要找到忙碌到閒置的任務
             {
-                tasks.Add(Task.Run(() =>
-               {
-                   Interlocked.Decrement(ref allServiceData[num].RequestNum);
-               }));
-            }
+                //var result = 0;
 
-            try
-            {                                
-                // 一旦先前的請求完成(包括釋放) 即開始等待下一個
-                 Task.Run( async() =>
+                Task t = Task.Run(() =>
                 {
-                    // 如果允許請求進入semaphoreSlim  等待信號容量釋放
-                    // 減少semaphoreSlim內的信號數 
-                    semaphoreSlim.WaitAsync();
-                    Console.WriteLine("被接收的請求" + i);
+                    // 都在忙碌
+                    while (queue.Count != allServiceData.Count)
+                    {
+                        return;
+                    }
+
                 });
+
+                t.Wait();
+
+                // 回傳主機編號
+                return getidleServer();
             }
-            finally
+        }
+
+        private int getidleServer()
+        {
+            while (true)
             {
-                semaphoreSlim.Release();
-                Console.WriteLine("被release的請求" + i);
+                var server = Random.Next(0, allServiceData.Count);
+
+                if (!queue.Contains(server))
+                {
+                    return server;
+                }
             }
-
-            var num2 = Random.Next(0, stayServiceData.Count);
-
-            return stayServiceData[num2].reports.GetAsync(reportObj);
-            
-            
-            //// 隨機取主機
-            //var num = Random.Next(0, allServiceData.Count);
-
-            //// 請求進來 計數+1    
-            //var count = Interlocked.Increment(ref allServiceData[num].RequestNum); 
-
-            //// 如果這台server的當前請求數 <= 他的最大請求數  (閒置中)
-            //if (count <= allServiceData[num].maxRequests)
-            //{
-            //    stayServiceData.Add(allServiceData[num]); // 把閒置的主機加到另一個集合              
-            //}
-            //else // 主機請求超過上限 => 進行釋放資源的任務
-            //{
-            //    tasks.Add(Task.Run(() =>
-            //   {
-            //       Interlocked.Decrement(ref allServiceData[num].RequestNum);
-            //   }));
-            //}
-
-            //// 如果閒置主機集合不為零 => 做接受請求的服務
-            //if (stayServiceData != null && stayServiceData.Count > 0)
-            //{
-            //    return await stayServiceData[stayServiceData.Count - 1].reports.GetAsync(reportObj);
-            //}
-            //else if (stayServiceData.Count == 0) // 三台主機都忙碌中
-            //{            
-            //    Task busyTasks = await Task.WhenAny(tasks); // 哪台忙碌主機先完成釋放資源就 接著做服務
-            //    tasks.Remove(busyTasks);
-
-            //    return await stayServiceData[stayServiceData.Count - 1].reports.GetAsync(reportObj);
-            //}
-
-            //return await stayServiceData[stayServiceData.Count - 1].reports.GetAsync(reportObj);
-        }   
-    }
-
-    public class AllServerObj
-    {
-
-        /// <summary>
-        /// 當前請求次數
-        /// </summary>
-        public int RequestNum = 0;
-
-        /// <summary>
-        /// 最大請求次數
-        /// </summary>
-        public int maxRequests;
-
-        /// <summary>
-        /// 服務方法
-        /// </summary>
-        public IReport reports;
+        }
     }
 }
-
