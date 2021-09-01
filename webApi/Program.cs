@@ -26,16 +26,16 @@ namespace webApi
             
             List<IReport> server = new List<IReport>()
             {
-                new FakeServices(100, 1, "Server1"),
-                new FakeServices(100, 2, "Server2"),
-                new FakeServices(100, 3, "Server3"),
+                new FakeServices(10, 1, "Server1"),
+                new FakeServices(10, 2, "Server2"),
+                new FakeServices(10, 3, "Server3"),
             };
 
             MaxRequestHandler maxRequestHandler = new MaxRequestHandler(server, 5);
 
             // 發送50次請求 要有隨機分配請求給三個service 超過server請求次數限制後 非同步等待請求釋放
             for (int i = 1; i <= 50; i++)
-            {        
+            {                              
                 _ = Task.Run(async () =>
                 {                               
                     try
@@ -51,6 +51,7 @@ namespace webApi
                     }
                 });                
             }
+
             Console.ReadLine();
         }
     }

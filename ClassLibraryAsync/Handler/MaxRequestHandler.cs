@@ -17,31 +17,37 @@ namespace ClassLibraryAsync.Handler
     /// </summary>
     public class MaxRequestHandler : IReport
     {
-        // 最大請求次數
-        private int MaxRequestCount;
-
         /// 建立私有服務欄位
-        private List<IReport> allServiceData;
+        private readonly List<IReport> allServiceData;
 
         /// <summary>
         /// 建立semaphoreslim鎖
         /// </summary>
-        private SemaphoreSlim semaphores;
+        private readonly SemaphoreSlim semaphores;
 
         /// <summary>
-        /// 存正在忙線的主機
+        /// 存放semaphore的信號量
         /// </summary>
-        private ConcurrentQueue<int> queue = new ConcurrentQueue<int>();         
-
+        private readonly ConcurrentQueue<int> queue = new ConcurrentQueue<int>();      
+        
         /// <summary>
         /// 建立建構式
         /// </summary>
         /// <param name="reports">各式服務</param>
         public MaxRequestHandler(List<IReport> allServerObjs, int maxRequetCount)
-        {
+        {            
             allServiceData = allServerObjs;
-            MaxRequestCount = maxRequetCount;
-            semaphores = new SemaphoreSlim(maxRequetCount);
+
+            // 信號量為所有主機的request最大總和
+            semaphores = new SemaphoreSlim(maxRequetCount* allServerObjs.Count);
+
+            // queue管理semaphoreslim的信號量
+            for (int i = 1; i <= maxRequetCount*allServerObjs.Count; i++)
+            {
+                // 每一個請求隨機給主機 這邊指定主機
+                var server = Random.Next(0, allServiceData.Count);             
+                queue.Enqueue(server);
+            }
         }
 
         /// <summary>
@@ -56,85 +62,26 @@ namespace ClassLibraryAsync.Handler
         /// <param name="reportObj">帶入服務的物件</param>
         /// <returns>response物件</returns>
         public async Task<Result> GetAsync(ReportObj reportObj)
-        {
-            var result = new Result();            
-            
+        {        
             // 异步等待进入信号量，如果没有线程被授予对信号量的访问权限，则进入执行保护代码；否则此线程将在此处等待，直到信号量被释放为止
             await semaphores.WaitAsync();
-
-            // 拿到閒置主機
-            var idleIndex = GetIdleServiceIndex();
-
-            // 把主機從queue裡面移除 queue 變閒置
-            queue.Enqueue(idleIndex);
+                               
+            // 拿佇列開頭的資源 並釋放掉
+            queue.TryDequeue(out int res); // 釋放掉的請求
 
             try
-           {                
-                // 做服務!!! 印到CONSOLE上 做完後=> 在釋放資源           
-                result = await allServiceData[idleIndex].GetAsync(reportObj);
-
-                // 把主機從queue裡面移除 queue 變閒置
-                queue.TryDequeue(out int res);
-            }
-            catch (Exception ex)
+            {                
+                // 做服務!!! 印到CONSOLE上 做完後=> 再釋放資源           
+                return await allServiceData[res].GetAsync(reportObj);       
+            }       
+            finally
             {
-                Console.WriteLine(ex);
-            };
+                // 把資源放回佇列上
+                queue.Enqueue(res);
 
-            // 增加semaphoreSlim內的信號空間 RELEASE +1 池+1    
-            semaphores.Release();
-
-            return result;                  
-        }
-
-        /// <summary>
-        /// 取得誰是閒置主機
-        /// </summary>
-        /// <returns>閒置主機主機編號</returns>
-        private int GetIdleServiceIndex()
-        {
-            // 只要有閒置 忙碌主機數 != 所有主機數
-            if (queue.Count != allServiceData.Count)
-            {
-                // 找閒置主機
-                return GetIdleServerRandom();
-            }
-            else // 如果沒有閒置server  需要找到忙碌到閒置的任務
-            {    
-                Task t = Task.Run(() =>
-                {
-                    // 都在忙碌
-                    while (queue.Count != allServiceData.Count)
-                    {
-                        return;
-                    }
-
-                });
-
-                // 等待忙碌的時間
-                t.Wait();
-
-                // 回傳主機編號
-                return GetIdleServerRandom();
-            }
-        }
-
-        /// <summary>
-        /// 透過一直迴圈找閒置主機
-        /// </summary>
-        /// <returns>閒置主機編號</returns>
-        private int GetIdleServerRandom()
-        {
-            while (true)
-            {
-                var server = Random.Next(0, allServiceData.Count);
-
-                // 如果不包含忙碌主機 就回傳主機編號
-                if (!queue.Contains(server))
-                {
-                    return server;
-                }
-            }
+                // 增加semaphoreSlim內的信號空間 RELEASE +1 池+1    
+                semaphores.Release();
+            }           
         }
     }
 }

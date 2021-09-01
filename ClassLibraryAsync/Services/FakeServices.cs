@@ -58,10 +58,12 @@ namespace ClassLibraryAsync.Services
             var result = new Result()
             {
                 signature = Name,
-            };
+            };            
 
             // 碰到await 返回呼叫端等 await中的方法執行完畢 從該處繼續執行
             await Task.Delay(RequestSecond * 1000);
+
+            count = Interlocked.Decrement(ref RequestNum);
 
             return result;
         }
